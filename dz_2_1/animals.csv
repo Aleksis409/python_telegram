@@ -1,0 +1,54 @@
+name,habitat,color,weight,shop_price,iq_score
+lion,land,brown,200.0,500,40
+dolphin,water,gray,150.0,1000,30
+eagle,air,black,5.0,250,50
+bear,land,brown,300.0,1000,25
+turtle,water,green,10.0,150,15
+tiger,land,orange,250.0,800,35
+shark,water,gray,1000.0,2000,10
+hawk,air,brown,2.0,100,55
+elephant,land,gray,4000.0,15000,15
+crocodile,water,green,500.0,600,20
+penguin,land/water,black and white,20.0,200,25
+parrot,air,multi-colored,1.0,500,45
+giraffe,land,yellow,1500.0,10000,30
+jellyfish,water,transparent,0.5,50,5
+otter,water,brown,30.0,300,40
+chameleon,land,green,0.1,100,60
+polar bear,land/ice,white,800.0,2000,20
+koala,land,gray,10.0,500,35
+dove,air,white,0.5,20,25
+rhinoceros,land,gray,2000.0,12000,15
+whale,water,gray,50000.0,500000,10
+snake,land,green,2.0,50,30
+octopus,water,multi-colored,5.0,300,40
+cat,land,orange,5.0,100,35
+swan,water,white,10.0,150,30
+gorilla,land,black,300.0,8000,25
+cockatoo,air,white,1.0,500,50
+hippopotamus,water,gray,4000.0,15000,10
+spider,land,black,0.005,10,60
+pelican,land/water,white,7.0,200,35
+fox,land,red,10.0,300,40
+crab,water,red,0.2,20,25
+rabbit,land,gray,2.0,50,55
+bat,air,black,0.1,30,45
+wolf,land,gray,30.0,800,40
+platypus,water,gray,1.0,500,45
+zebra,land,black and white,500.0,3000,30
+lizard,land,green,0.5,50,50
+seagull,air,white,0.5,30,40
+orangutan,land,orange,50.0,5000,25
+panda,land,black and white,200.0,10000,20
+camel,land,brown,1000.0,7000,15
+raccoon,land,gray,10.0,200,35
+hedgehog,land,brown,0.5,50,55
+monkey,land,brown,20.0,2000,30
+toucan,air,black and yellow,0.5,150,45
+gazelle,land,brown,150.0,1000,35
+cheetah,land,yellow and black,120.0,1500,40
+hammerhead shark,water,gray,500.0,2000,30
+owl,land/air,brown and white,1.0,200,50
+tarantula,land,brown,0.1,50,60
+flamingo,land/water,pink,3.0,150,35
+jaguar,land,orange and black,100.0,1800,35
