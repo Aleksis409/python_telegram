@@ -45,7 +45,8 @@ openai.api_key = base64.b64decode(API_KEY).decode()
 model = "gpt-3.5-turbo"
 
 chat_history = {}
-init_bot_role = [{"role": "system", "content": "Ты поэт, зарифмуй, преобразуй и верни сообщения пользователя как стих. Сохраняй смысл сообщения. Не превышай объем сообщения"}]
+init_bot_role = [{"role": "system", "content": "Ты поэт как Бернарт де Вентадорн, зарифмуй, преобразуй и верни сообщения пользователя как стих в легком стиле. Сохраняй смысл сообщения. Объем стиха должен быть примерно равен объему запроса"}]
+logging.info(f'init_bot_role = : {init_bot_role}')                                    # добавляем в лог info
 
 
 #  bot.py - запуск телеграм бота,  polly_bot_handlers.py - инициализация телеграм бота    
@@ -59,7 +60,7 @@ def get_bot_response(user_id: int, telegram_prompt: str) -> tuple[str, int]:
     if user_id not in chat_history:                             
         chat_history[user_id] = copy.deepcopy(init_bot_role)
     
-    chat_history[user_id].append({"role": "user", "content": telegram_prompt})
+    chat_history[user_id].append({"role": "user", "content": telegram_prompt})        # добавляем запрос пользователя из telegram в историю чата для пользователя user_id
     try:
         response = openai.ChatCompletion.create(
             model = model,
@@ -67,18 +68,22 @@ def get_bot_response(user_id: int, telegram_prompt: str) -> tuple[str, int]:
             temperature = 0.5
         )  
         
-        bot_response = response['choices'][0]['message']['content']
-        total_tokens = response['usage']['total_tokens'] 
+        bot_response = response['choices'][0]['message']['content']                   # формируем ответ чата GPT
+        total_tokens = response['usage']['total_tokens']                              # кол-во токенов
 
-        chat_history[user_id].append({"role": "assistant", "content": bot_response})
+        chat_history[user_id].append({"role": "assistant", "content": bot_response})  # добавляем ответ чата GPT в историю чата для пользователя user_id
 
-        print(f"You: {telegram_prompt}")
-        print(f"Bot: {bot_response}")
+        print(f"You: {telegram_prompt}")                                              # печать диалога в консоль
+        print(f"Bot: {bot_response}")                                                 # печать диалога в консоль
         # print(f"chat_history: {chat_history}")
+        logging.info(f'Bot for {user_id}: {bot_response}')                            # добавляем в лог info
+        logging.info(f'tokens user {user_id}: {total_tokens}')                        # добавляем в лог info
         
         return bot_response, total_tokens
+    
     except Exception:
-        return "Сервер openAPI не доступен, попробуйте позже", 0
+        logging.error('Сервер openAPI не доступен')                                   # добавляем в лог error
+        return "Сервер openAPI не доступен, попробуйте позже", 0    
   
     
 def clear_chat_histoty(user_id: int) -> None:
@@ -93,7 +98,7 @@ import pandas as pd
 try:
     users_df = pd.read_csv('users.csv')
 except FileNotFoundError:
-    users_df = pd.DataFrame(columns=['user_id', 'tokens', 'context', 'token_capacity', 'context_capacity', 'last_request_time'])
+    users_df = pd.DataFrame(columns=['user_id', 'tokens', 'context', 'token_capacity', 'context_capacity', 'last_request_time', 'token_clear_time'])
     users_df.to_csv('users.csv', index=False)
 
 
@@ -101,7 +106,7 @@ except FileNotFoundError:
 def user_reg(user_id):
     global users_df
      # Добавляем нового пользователя
-    new_user_df = pd.DataFrame({'user_id': [user_id], 'tokens': [0], 'context': [''], 'token_capacity': [max_token_usage], 'context_capacity': [max_context_length], 'last_request_time': [0.0]})
+    new_user_df = pd.DataFrame({'user_id': [user_id], 'tokens': [0], 'context': [''], 'token_capacity': [max_token_usage], 'context_capacity': [max_context_length], 'last_request_time': [0.0], 'token_clear_time': [int(time())]})
     users_df = pd.concat([users_df, new_user_df], ignore_index=True)
 
 
@@ -109,10 +114,10 @@ def user_reg(user_id):
 def update_user_info(user_id, tokens=0, context=''):
     """ Функция обновления информации о пользователе"""
     # Обновляем информацию о пользователе
-    idx = users_df.index[users_df['user_id'] == user_id].tolist()[0]  # получаем индекс строки пользователя user_id
+    idx = users_df.index[users_df['user_id'] == user_id].tolist()[0]          # получаем индекс строки пользователя user_id
     users_df.at[idx, 'tokens'] += tokens
     users_df.at[idx, 'context'] += context    
-    users_df.at[idx, 'last_request_time'] = time()
+    users_df.at[idx, 'last_request_time'] = int(time())
     
 
 # Функция сохранения данных в файл users.csv
@@ -120,6 +125,7 @@ def save_user_data():
     """ Функция сохранения данных в файл users.csv """
     global users_df
     users_df.to_csv('users.csv', index=False)
+    logging.info(f'данные созранены в файл users.csv')                        # добавляем в лог info
 
 
 def limit_checking(user_id, context_length):
@@ -128,14 +134,16 @@ def limit_checking(user_id, context_length):
     idx = users_df.index[users_df['user_id'] == user_id].tolist()[0]          # получаем индекс строки пользователя user_id
     full_context_length = len(users_df.at[idx, 'context']) + context_length   # вычисляем полную длину контекста 
     tokens = users_df.at[idx, 'tokens']
+    logging.info(f'full_context_length user {user_id}: {full_context_length}') # добавляем в лог info
 
     if  tokens > users_df.at[idx, 'token_capacity']:                          # проверяем кол-во токенов 
         print(f'tokens = {tokens}')
         answer = "У вас закончились токены!"                                  # превышен лимит токенов
+        logging.warning(f'предупреждение: user {user_id}: {answer}')          # добавляем в лог warning
     
-    elif full_context_length > users_df.at[idx, 'context_capacity']:          # проверяем контекст
-        print(f'context_length = {full_context_length}')
+    elif full_context_length > users_df.at[idx, 'context_capacity']:          # проверяем размер контекста        
         answer = "Превышен лимит длины контекста! Произведите очистку"        # превышен лимит длины контекста
+        logging.warning(f'предупреждение: user {user_id}: {answer}')          # добавляем в лог warning
     else: return None
     return answer
 
@@ -145,14 +153,16 @@ def get_tokens(user_id):
     global users_df
     idx = users_df.index[users_df['user_id'] == user_id].tolist()[0]          # получаем индекс строки пользователя user_id
     users_df.at[idx, 'tokens'] = 0   
-
+    logging.info(f'user {user_id} обнуление счетчика токенов')                # добавляем в лог info
+    
 
 def clean_context(user_id):
     global users_df
     """Функция чистки контекста беседы"""
     idx = users_df.index[users_df['user_id'] == user_id].tolist()[0]          # получаем индекс строки пользователя user_id
     users_df.at[idx, 'context'] = ""    
-
+    logging.info(f'user {user_id} чистка контекста беседы')                   # добавляем в лог info
+    
 
 # инициализация бота
 bot=Bot(token = base64.b64decode(TELEGRAM_TOKEN).decode())  
@@ -164,11 +174,18 @@ dp=Dispatcher(bot)
 async def clean_tokens(message: types.Message):
     global users_df
     user_id = message.from_user.id                                             # получаем id пользователя
-    logging.info(f'поступило сообщение: {message.text}')
+    logging.info(f'сообщение от user {user_id}: {message.text}')               # добавляем в лог info      
 
     if user_id in users_df['user_id'].values:                                  # пользователь зарегистрирован
-        get_tokens(user_id)                                                    # обнуление счетчика токенов          
-        bot_answer = ("Счетчик  токенов обнулен")        
+        idx = users_df.index[users_df['user_id'] == user_id].tolist()[0]       # получаем индекс строки пользователя user_id
+        
+        if int(time()) - users_df.at[idx, 'token_clear_time'] > 300:           # ограничение обнуления счетчика токенов - 1 раз в 5 мин
+            get_tokens(user_id)                                                # обнуление счетчика токенов    
+            users_df.at[idx, 'token_clear_time'] = int(time())                 # запоминаем время обнуления счетчика токенов
+            bot_answer = ("Счетчик токенов обнулен") 
+            logging.info(f'user {user_id}: {bot_answer} - {int(time())}')      # добавляем в лог info     
+        else:
+            bot_answer = ("Получение новых токенов не ранее чем через 5 мин")  
     else:
         bot_answer = ("Необходимо зарегистрироваться!")                        # пользователь не зарегистрирован
     await message.answer(bot_answer)
@@ -179,7 +196,7 @@ async def clean_tokens(message: types.Message):
 async def context_clean(message: types.Message):
     global users_df
     user_id = message.from_user.id                                             # получаем id пользователя
-    logging.info(f'поступило сообщение: {message.text}')
+    logging.info(f'сообщение от {user_id}: {message.text}')                    # добавляем в лог info
 
     if user_id in users_df['user_id'].values:                                  # пользователь зарегистрирован
         clean_context(user_id)                                                 # очистка контекста беседы   
@@ -197,13 +214,14 @@ async def context_clean(message: types.Message):
 async def start(message: types.Message):
     global users_df
     user_id = message.from_user.id                                             # получаем id пользователя    
-    logging.info(f'поступило сообщение: {message.text}')
+    logging.info(f'сообщение от user {user_id}: {message.text}')               # добавляем в лог info
     
     if user_id in users_df['user_id'].values:
         bot_answer = (f"И снова здравствуйте, {message.from_user.username}!")  # уже зарегистрирован    
     else:
         user_reg(user_id)                                                      # регистрация пользователя
-        bot_answer = (f"Привет, {message.from_user.username}!")                # новый пользователь            
+        bot_answer = (f"Привет, {message.from_user.username}!")                # новый пользователь 
+        logging.info(f'регистрация пользователя {user_id}')                    # добавляем в лог info          
     await message.answer(bot_answer)
 
 
@@ -212,22 +230,22 @@ async def start(message: types.Message):
 async def respond (message:types.Message):
     global users_df
     user_id = message.from_user.id                                             # получаем id пользователя      
-    logging.info(f'поступило сообщение: {message.text}')
+    logging.info(f'сообщение от user {user_id}: {message.text}')               # добавляем в лог info
 
     if user_id in users_df['user_id'].values:                                  # пользователь зарегистрирован
         idx = users_df.index[users_df['user_id'] == user_id].tolist()[0]       # получаем индекс строки пользователя user_id
         
-        if time() - users_df.at[idx, 'last_request_time'] < 60:
-            await message.answer("Не так быстро! Можно сделать только 1 запрос в минуту!")
+        if time() - users_df.at[idx, 'last_request_time'] < 1:                 # ограничение количества запросов
+            await message.answer("Не так быстро! Можно сделать только 1 запрос в 1 секунду!")
         else:
             checking_result = limit_checking(user_id, len(message.text))  
-            if checking_result is None:                                            # проверка лимита токенов и лимита контекста сообщения 
-                bot_response, tokens = get_bot_response(user_id, message.text)     # Получаем текущий chat_history пользователя
-                context = f" You: {message.text} Bot: {bot_response}"              # Добавляем текущий контекст к существующему
-                update_user_info(user_id, tokens, context)                         # Обновляем информацию о пользователе
-                save_user_data()                                                   # сохраняем данные в базу                   
+            if checking_result is None:                                        # проверка лимита токенов и лимита контекста сообщения 
+                bot_response, tokens = get_bot_response(user_id, message.text) # Получаем текущий chat_history пользователя
+                context = f" You: {message.text} Bot: {bot_response}"          # Добавляем текущий контекст к существующему
+                update_user_info(user_id, tokens, context)                     # Обновляем информацию о пользователе
+                save_user_data()                                               # сохраняем данные в базу                   
 
-                await message.answer(bot_response)                                 # возвращаем ответ Chat GPT
+                await message.answer(bot_response)                             # возвращаем ответ Chat GPT
             else:
                 await message.answer(checking_result)
 
