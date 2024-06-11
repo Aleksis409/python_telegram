@@ -1,0 +1,5 @@
+2024-04-13 15:34:51,415 - INFO - An INFO
+2024-04-13 15:34:51,415 - WARNING - A WARNING
+2024-04-13 15:34:51,415 - ERROR - An ERROR
+2024-04-13 15:34:51,416 - CRITICAL - A message of CRITICAL severity
+2024-04-13 15:34:51,419 - INFO - init_bot_role = : [{'role': 'system', 'content': 'Ты интелелектуальный помощник.'}]
