@@ -77,8 +77,9 @@ def get_bot_response(user_id: int, telegram_prompt: str) -> tuple[str, int]:
         logging.info(f'tokens user {user_id}: {total_tokens}')                        # добавляем в лог info        
         return bot_response, total_tokens
     
-    except Exception:
-        logging.error('Сервер openAPI не доступен')                                   # добавляем в лог error
+    except Exception as e:
+        print(f"Возникло исключение: {e}")
+        logging.error(f"Сервер openAPI не доступен ({e})")                            # добавляем в лог error
         return "Сервер openAPI не доступен, попробуйте позже", 0       
 
 
